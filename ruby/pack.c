@@ -144,15 +144,29 @@ static VALUE MessagePack_Bignum_to_msgpack(int argc, VALUE *argv, VALUE self)
  * call-seq:
  *   float.to_msgpack(out = '') -> String
  *
- * Serializes the Float into raw bytes.
+ * Serializes the Float into raw bytes. Uses double precision (9B).
  */
-static VALUE MessagePack_Float_to_msgpack(int argc, VALUE *argv, VALUE self)
+VALUE MessagePack_Float_to_msgpack(int argc, VALUE *argv, VALUE self)
 {
 	ARG_BUFFER(out, argc, argv);
 	msgpack_pack_double(out, rb_num2dbl(self));
 	return out;
 }
 
+/*
+ * Document-method: Float#to_msgpack
+ *
+ * call-seq:
+ *   float.to_msgpack(out = '') -> String
+ *
+ * Serializes the Float into raw bytes. Uses a float to save memory (5B).
+ */
+VALUE MessagePack_Float_to_msgpack_lowmem(int argc, VALUE *argv, VALUE self)
+{
+	ARG_BUFFER(out, argc, argv);
+	msgpack_pack_float(out, (float)rb_num2dbl(self));
+	return out;
+}
 
 /*
  * Document-method: String#to_msgpack

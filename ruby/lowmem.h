@@ -1,7 +1,7 @@
 /*
- * MessagePack for Ruby packing routine
+ * MessagePack for Ruby lowmem switch
  *
- * Copyright (C) 2008-2010 FURUHASHI Sadayuki
+ * Copyright (C) 2011 Moodstocks SAS
  *
  *    Licensed under the Apache License, Version 2.0 (the "License");
  *    you may not use this file except in compliance with the License.
@@ -15,14 +15,11 @@
  *    See the License for the specific language governing permissions and
  *    limitations under the License.
  */
-#ifndef PACK_H__
-#define PACK_H__
+#ifndef LOWMEM_H__
+#define LOWMEM_H__
 
 #include "ruby.h"
 
-void Init_msgpack_pack(VALUE mMessagePack);
-VALUE MessagePack_Float_to_msgpack(int argc, VALUE *argv, VALUE self);
-VALUE MessagePack_Float_to_msgpack_lowmem(int argc, VALUE *argv, VALUE self);
+void Init_msgpack_lowmem(VALUE mMessagePack);
 
-#endif /* pack.h */
-
+#endif /* unpack.h */

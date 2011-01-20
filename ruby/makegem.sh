@@ -8,6 +8,8 @@ cp pack.h       ext/
 cp rbinit.c     ext/
 cp unpack.c     ext/
 cp unpack.h     ext/
+cp lowmem.c     ext/
+cp lowmem.h     ext/
 cp compat.h     ext/
 cp version.rb   ext/
 cp ../msgpack/pack_define.h     msgpack/

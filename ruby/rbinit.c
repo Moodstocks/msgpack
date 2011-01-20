@@ -17,6 +17,7 @@
  */
 #include "pack.h"
 #include "unpack.h"
+#include "lowmem.h"
 #include "compat.h"
 
 static VALUE mMessagePack;
@@ -61,6 +62,7 @@ void Init_msgpack(void)
 	s_enc_utf8_value = rb_enc_from_encoding(rb_utf8_encoding());
 #endif
 
+	Init_msgpack_lowmem(mMessagePack);
 	Init_msgpack_unpack(mMessagePack);
 	Init_msgpack_pack(mMessagePack);
 }
