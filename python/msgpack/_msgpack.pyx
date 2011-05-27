@@ -9,6 +9,9 @@ cdef extern from "Python.h":
 
 from libc.stdlib cimport *
 from libc.string cimport *
+import gc
+_gc_disable = gc.disable
+_gc_enable = gc.enable
 
 cdef extern from "pack.h":
     struct msgpack_packer:
@@ -41,7 +44,7 @@ cdef class Packer(object):
         astream.write(packer.pack(b))
     """
     cdef msgpack_packer pk
-    cdef object default
+    cdef object _default
 
     def __cinit__(self):
         cdef int buf_size = 1024*1024
@@ -55,13 +58,12 @@ cdef class Packer(object):
         if default is not None:
             if not PyCallable_Check(default):
                 raise TypeError("default must be a callable.")
-        self.default = default
+        self._default = default
 
     def __dealloc__(self):
         free(self.pk.buf);
 
-    cdef int _pack(self, object o, int nest_limit=DEFAULT_RECURSE_LIMIT,
-                   default=None) except -1:
+    cdef int _pack(self, object o, int nest_limit=DEFAULT_RECURSE_LIMIT) except -1:
         cdef long long llval
         cdef unsigned long long ullval
         cdef long longval
@@ -109,26 +111,26 @@ cdef class Packer(object):
             ret = msgpack_pack_map(&self.pk, len(d))
             if ret == 0:
                 for k,v in d.items():
-                    ret = self._pack(k, nest_limit-1, default)
+                    ret = self._pack(k, nest_limit-1)
                     if ret != 0: break
-                    ret = self._pack(v, nest_limit-1, default)
+                    ret = self._pack(v, nest_limit-1)
                     if ret != 0: break
         elif PySequence_Check(o):
             ret = msgpack_pack_array(&self.pk, len(o))
             if ret == 0:
                 for v in o:
-                    ret = self._pack(v, nest_limit-1, default)
+                    ret = self._pack(v, nest_limit-1)
                     if ret != 0: break
-        elif default is not None:
-            o = self.default(o)
-            ret = self._pack(o, nest_limit)
+        elif self._default:
+            o = self._default(o)
+            ret = self._pack(o, nest_limit-1)
         else:
             raise TypeError("can't serialize %r" % (o,))
         return ret
 
     def pack(self, object obj):
         cdef int ret
-        ret = self._pack(obj, DEFAULT_RECURSE_LIMIT, self.default)
+        ret = self._pack(obj, DEFAULT_RECURSE_LIMIT)
         if ret:
             raise TypeError
         buf = PyBytes_FromStringAndSize(self.pk.buf, self.pk.length)
@@ -167,7 +169,7 @@ cdef extern from "unpack.h":
     object template_data(template_context* ctx)
 
 
-def unpackb(object packed, object object_hook=None, object list_hook=None):
+def unpackb(object packed, object object_hook=None, object list_hook=None, bint use_list=0):
     """Unpack packed_bytes to object. Returns an unpacked object."""
     cdef template_context ctx
     cdef size_t off = 0
@@ -178,7 +180,7 @@ def unpackb(object packed, object object_hook=None, object list_hook=None):
     PyObject_AsReadBuffer(packed, <const_void_ptr*>&buf, &buf_len)
 
     template_init(&ctx)
-    ctx.user.use_list = 0
+    ctx.user.use_list = use_list
     ctx.user.object_hook = ctx.user.list_hook = NULL
     if object_hook is not None:
         if not PyCallable_Check(object_hook):
@@ -188,7 +190,9 @@ def unpackb(object packed, object object_hook=None, object list_hook=None):
         if not PyCallable_Check(list_hook):
             raise TypeError("list_hook must be a callable.")
         ctx.user.list_hook = <PyObject*>list_hook
+    _gc_disable()
     ret = template_execute(&ctx, buf, buf_len, &off)
+    _gc_enable()
     if ret == 1:
         return template_data(&ctx)
     else:
@@ -196,22 +200,10 @@ def unpackb(object packed, object object_hook=None, object list_hook=None):
 
 loads = unpacks = unpackb
 
-def unpack(object stream, object object_hook=None, object list_hook=None):
+def unpack(object stream, object object_hook=None, object list_hook=None, bint use_list=0):
     """unpack an object from stream."""
-    return unpackb(stream.read(),
+    return unpackb(stream.read(), use_list=use_list,
                    object_hook=object_hook, list_hook=list_hook)
-
-cdef class UnpackIterator(object):
-    cdef object unpacker
-
-    def __init__(self, unpacker):
-        self.unpacker = unpacker
-
-    def __next__(self):
-        return self.unpacker.unpack()
-
-    def __iter__(self):
-        return self
 
 cdef class Unpacker(object):
     """Unpacker(read_size=1024*1024)
@@ -327,7 +319,9 @@ cdef class Unpacker(object):
         """unpack one object"""
         cdef int ret
         while 1:
+            _gc_disable()
             ret = template_execute(&self.ctx, self.buf, self.buf_tail, &self.buf_head)
+            _gc_enable()
             if ret == 1:
                 o = template_data(&self.ctx)
                 template_init(&self.ctx)
@@ -341,7 +335,10 @@ cdef class Unpacker(object):
                 raise ValueError("Unpack failed: error = %d" % (ret,))
 
     def __iter__(self):
-        return UnpackIterator(self)
+        return self
+
+    def __next__(self):
+        return self.unpack()
 
     # for debug.
     #def _buf(self):
