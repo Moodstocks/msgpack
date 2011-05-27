@@ -1,10 +1,10 @@
 *.o
 *.so
 ruby/Makefile
-<<<<<<< HEAD
 ruby/doc/
+ruby/test/*.json
+ruby/test/*.mpac
 ruby/*.gem
-=======
 *.5
 *.8
 *.6
@@ -17,4 +17,3 @@ _test
 /csharp/MsgPack.Test/obj
 /csharp/MsgPack.Test/bin
 /csharp/MsgPack.Test/MsgPack.Test.csproj.user
->>>>>>> refs/remotes/upstream/master
