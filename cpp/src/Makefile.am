@@ -3,7 +3,6 @@ lib_LTLIBRARIES = libmsgpack.la
 
 libmsgpack_la_SOURCES = \
 		unpack.c \
-		dyn.c \
 		objectc.c \
 		version.c \
 		vrefbuffer.c \
@@ -23,7 +22,6 @@ lib_LTLIBRARIES += libmsgpackc.la
 
 libmsgpackc_la_SOURCES = \
 		unpack.c \
-		dyn.c \
 		objectc.c \
 		version.c \
 		vrefbuffer.c \
