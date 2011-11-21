@@ -1,27 +1,34 @@
-{-# Language TemplateHaskell #-}
+{-# LANGUAGE TemplateHaskell #-}
+{-# LANGUAGE OverloadedStrings #-}
 
 import Data.MessagePack
-import Data.MessagePack.Derive
 
 data T
   = A Int String
   | B Double
   deriving (Show, Eq)
 
-$(deriveObject ''T)
+deriveObject True ''T
 
 data U
   = C { c1 :: Int, c2 :: String }
-  | D { d1 :: Double }
+  | D { z1 :: Double }
   deriving (Show, Eq)
 
-$(deriveObject ''U)
+deriveObject True ''U
 
 data V
   = E String | F
   deriving (Show, Eq)
 
-$(deriveObject ''V)
+deriveObject True ''V
+
+data W a
+  = G a String
+  | H { hHoge :: Int, h_age :: a }
+  deriving (Show, Eq)
+
+deriveObject True ''W
 
 test :: (OBJECT a, Show a, Eq a) => a -> IO ()
 test v = do
@@ -33,6 +40,7 @@ test v = do
   print oa
   print (fromObject oa == v)
 
+main :: IO ()
 main = do
   test $ A 123 "hoge"
   test $ B 3.14
@@ -40,4 +48,6 @@ main = do
   test $ D 3.14
   test $ E "hello"
   test $ F
+  test $ G (E "hello") "world"
+  test $ H 123 F
   return ()
